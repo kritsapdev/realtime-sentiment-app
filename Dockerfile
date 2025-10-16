@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # ขั้นที่ 6: บอกให้โลกรู้ว่า "กล่อง" ใบนี้เปิดให้บริการที่ Port 8000
-EXPOSE 8000
+#EXPOSE 8000
 
 # ขั้นที่ 7: คำสั่งสุดท้ายที่จะรันเมื่อกล่องนี้ถูกเปิดใช้งาน
 # เราสั่งให้มันรัน Backend Server ของเรานั่นเอง
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
