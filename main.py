@@ -1,4 +1,5 @@
 # main.py
+import random # เพิ่มบรรทัดนี้
 import json
 from typing import List
 
@@ -46,6 +47,19 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+# เพิ่มลิสต์คอมเมนต์ตัวอย่างเข้ามาใน Backend เลย
+COMMENTS = [
+    "สินค้าคุณภาพดีมากครับ ประทับใจสุดๆ",
+    "ส่งของเร็วดีนะ แต่แพ็คเกจบุบไปหน่อย",
+    "เฉยๆ อะ ไม่ได้ดีเท่าที่คาดหวังไว้",
+    "โคตรห่วย! ใช้ได้วันเดียวพัง",
+    "บริการหลังการขายดีเยี่ยม ตอบแชทไว",
+    "สีสวยตรงปก ชอบมากค่ะ",
+    "รอนานมากกกกกกกกก",
+]
+
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """
@@ -61,27 +75,16 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-@app.post("/new-comment/")
-async def new_comment_received(data: dict):
+# --- Endpoint ใหม่สำหรับให้ Cloud Scheduler เรียก ---
+@app.post("/simulate-new-comment")
+async def simulate_new_comment():
     """
-    Endpoint สำหรับรับคอมเมนต์ใหม่ๆ
-    เมื่อมีคนยิงข้อมูลมาที่นี่ ระบบจะเริ่มทำงาน
+    Endpoint นี้จะทำงานเหมือน simulator.py ทุกประการ
+    คือสุ่มคอมเมนต์, วิเคราะห์, แล้ว broadcast
     """
-    comment_text = data.get("text", "")
-    if not comment_text:
-        return {"error": "Text is required"}
+    comment_to_simulate = random.choice(COMMENTS)
 
-    # 1. เรียกใช้ AI เพื่อวิเคราะห์ความรู้สึก
-    analysis_result = analyze_sentiment(comment_text)
+    # เรียกใช้ฟังก์ชันเดิมที่เรามีอยู่แล้ว
+    await new_comment_received({"text": comment_to_simulate})
 
-    # 2. เตรียมข้อมูลที่จะส่งไปให้ Dashboard
-    payload = {
-        "text": comment_text,
-        "label": analysis_result["label"],
-        "score": analysis_result["score"]
-    }
-
-    # 3. สั่งให้ผู้จัดการส่งข้อมูล (broadcast) ไปยังทุก Dashboard
-    await manager.broadcast(json.dumps(payload))
-
-    return {"message": "Analysis broadcasted successfully", "data": payload}
+    return {"status": "ok", "simulated_comment": comment_to_simulate}
