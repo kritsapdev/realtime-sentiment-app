@@ -6,6 +6,10 @@ from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware # เพิ่มเข้ามาเพื่อ Dashboard ในอนาคต
 
+import random
+import asyncio # เพิ่ม asyncio สำหรับการหน่วงเวลา
+from fastapi import BackgroundTasks # เพิ่ม BackgroundTasks
+
 # Import ฟังก์ชันวิเคราะห์ที่เราสร้างไว้ในขั้นตอนที่แล้ว
 from sentiment_analyzer import analyze_sentiment
 
@@ -76,15 +80,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 # --- Endpoint ใหม่สำหรับให้ Cloud Scheduler เรียก ---
-@app.post("/simulate-new-comment")
-async def simulate_new_comment():
+async def run_simulation_loop():
     """
-    Endpoint นี้จะทำงานเหมือน simulator.py ทุกประการ
-    คือสุ่มคอมเมนต์, วิเคราะห์, แล้ว broadcast
+    ฟังก์ชันนี้จะทำงานเบื้องหลัง วนลูปส่งคอมเมนต์ 12 ครั้ง (ครั้งละ 5 วินาที)
     """
-    comment_to_simulate = random.choice(COMMENTS)
-
-    # เรียกใช้ฟังก์ชันเดิมที่เรามีอยู่แล้ว
-    await new_comment_received({"text": comment_to_simulate})
-
-    return {"status": "ok", "simulated_comment": comment_to_simulate}
+    print("Starting simulation loop for 1 minute...")
+    for i in range(12): # ทำงาน 12 ครั้ง
+        comment_to_simulate = random.choice(COMMENTS)
+        print(f"Loop {i+1}/12: Simulating '{comment_to_simulate}'")
+        # เรียกใช้ฟังก์ชันเดิมเพื่อวิเคราะห์และ broadcast
+        await new_comment_received({"text": comment_to_simulate})
+        # หน่วงเวลา 5 วินาทีแบบไม่บล็อกการทำงานอื่น
+        await asyncio.sleep(5)
+    print("Simulation loop finished.")
