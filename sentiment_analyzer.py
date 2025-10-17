@@ -1,39 +1,38 @@
 # sentiment_analyzer.py
-from transformers import pipeline
+import requests
+import os
 
-# 1. โหลดโมเดล AI สำเร็จรูปสำหรับวิเคราะห์ความรู้สึก
-# เราจะโหลดโมเดลนี้แค่ครั้งเดียวตอนโปรแกรมเริ่มทำงาน เพื่อความรวดเร็ว
-# โมเดล "lxyuan/distilbert-base-multilingual-cased-sentiments-student"
-# ถูกฝึกมาให้เข้าใจหลายภาษา รวมถึงภาษาไทย
-print("กำลังโหลดโมเดล... (อาจใช้เวลาสักครู่ในครั้งแรก)")
-sentiment_pipeline = pipeline(
-    "sentiment-analysis",
-    model="poom-sci/WangchanBERTa-finetuned-sentiment"
-)
-print("โมเดลพร้อมใช้งาน!")
+# 1. URL ของ API ที่จะเรียกใช้ (เรายังคงใช้โมเดลเดิม แต่รันบนเซิร์ฟเวอร์ของ Hugging Face)
+API_URL = "https://api-inference.huggingface.co/models/lxyuan/distilbert-base-multilingual-cased-sentiments-student"
 
+# 2. ดึง Token ที่เราเก็บไว้ใน Secret ซึ่ง CI/CD จะตั้งค่าให้เป็น Environment Variable
+hf_token = os.environ.get("HF_TOKEN")
+if not hf_token:
+    # ถ้าหา Token ไม่เจอ (เช่นตอนรันบนเครื่องตัวเอง) ให้แจ้งเตือนและหยุดทำงาน
+    raise ValueError("ไม่พบ Hugging Face API Token กรุณาตั้งค่าใน Environment Variable ชื่อ HF_TOKEN")
+
+# 3. เตรียม Header สำหรับยืนยันตัวตน
+headers = {"Authorization": f"Bearer {hf_token}"}
 
 def analyze_sentiment(text: str):
     """
-    ฟังก์ชันสำหรับรับข้อความ (text) และส่งคืนผลการวิเคราะห์
-    ในรูปแบบของ dictionary ที่มี 'label' และ 'score'
+    ฟังก์ชันสำหรับส่งข้อความไปวิเคราะห์ที่ Hugging Face Inference API
     """
     if not text or not isinstance(text, str):
         return {"label": "neutral", "score": 0.0}
 
-    # ใช้โมเดลที่โหลดไว้มาทำการวิเคราะห์
-    result = sentiment_pipeline(text)[0]
-    return {"label": result['label'], "score": round(result['score'], 4)}
+    try:
+        # 4. ส่ง request ไปยัง API พร้อมข้อความที่ต้องการวิเคราะห์
+        response = requests.post(API_URL, headers=headers, json={"inputs": text})
+        response.raise_for_status() # เช็คว่ามี error (เช่น 4xx, 5xx) หรือไม่
 
+        # 5. จัดการผลลัพธ์ที่ได้กลับมา
+        result = response.json()[0]
+        # หา label ที่มี score สูงที่สุดจากผลลัพธ์ที่ได้
+        top_sentiment = max(result, key=lambda x: x['score'])
+        return {"label": top_sentiment['label'], "score": round(top_sentiment['score'], 4)}
 
-# --- ส่วนนี้สำหรับทดสอบการทำงานของไฟล์นี้โดยตรง ---
-if __name__ == "__main__":
-    # ลองทดสอบกับข้อความตัวอย่าง
-    text1 = "สินค้าดีมาก ส่งไว คุณภาพเยี่ยม!"
-    text2 = "ห่วยแตกที่สุด ใช้ได้วันเดียวก็พัง"
-    text3 = "ก็โอเคนะ สมราคา"
-
-    print("\n--- ผลการทดสอบ ---")
-    print(f"รีวิว: '{text1}' -> ผลลัพธ์: {analyze_sentiment(text1)}")
-    print(f"รีวิว: '{text2}' -> ผลลัพธ์: {analyze_sentiment(text2)}")
-    print(f"รีวิว: '{text3}' -> ผลลัพธ์: {analyze_sentiment(text3)}")
+    except requests.exceptions.RequestException as e:
+        # ถ้าเกิด error ในการเชื่อมต่อ ให้พิมพ์ error และ trả về ค่ากลางๆ ไปก่อน
+        print(f"Error calling Hugging Face API: {e}")
+        return {"label": "neutral", "score": 0.0}

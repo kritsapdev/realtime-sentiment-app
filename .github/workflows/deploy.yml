@@ -55,3 +55,4 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated
+            --set-env-vars="HF_TOKEN=${{ secrets.HF_TOKEN }}" # <-- เพิ่มบรรทัดนี้เข้ามา

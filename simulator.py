@@ -17,7 +17,8 @@ COMMENTS = [
 ]
 
 # URL ของ Backend Server ที่เรารันไว้อยู่
-API_URL = "http://127.0.0.1:8000/new-comment/"
+# NEW - CORRECT CODE
+API_URL = "https://realtime-sentiment-app-256576118647.asia-southeast1.run.app/new-comment/"
 
 print("--- Comment Simulator กำลังจะเริ่มทำงาน ---")
 print("--- กด CTRL+C เพื่อหยุดการทำงาน ---")
