@@ -54,5 +54,5 @@ jobs:
             --image ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
             --region ${{ env.GCP_REGION }} \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
             --set-env-vars="HF_TOKEN=${{ secrets.HF_TOKEN }}" # <-- เพิ่มบรรทัดนี้เข้ามา
