@@ -10,4 +10,5 @@ COPY . .
 
 # คำสั่งสำหรับรัน Dashboard Server
 # ใช้ shell form เพื่อให้ $PORT ทำงานได้
-CMD python dashboard.py --host 0.0.0.0 --port $PORT
+# CMD ใหม่ (ที่ถูกต้องสำหรับ Production):
+CMD gunicorn -w 4 -b 0.0.0.0:$PORT dashboard:app.server
