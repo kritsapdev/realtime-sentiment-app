@@ -42,9 +42,9 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" # <-- แก้ไขบรรทัดนี้
+            --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
           # Get the URL of the service and save it as an output
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
+          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GGCP_REGION }} --format 'value(status.url)')
           echo "url=$URL" >> $GITHUB_OUTPUT
 
   # JOB 2: Deploys the Dashboard AFTER the Backend is ready
