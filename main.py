@@ -53,6 +53,25 @@ async def process_and_broadcast_comment(comment_text: str):
     }
     await manager.broadcast(json.dumps(payload))
 
+
+# --- เพิ่ม Endpoint สำหรับทดสอบการ Broadcast โดยตรง ---
+@app.get("/test-broadcast")
+async def test_broadcast():
+    """
+    Endpoint ง่ายๆ สำหรับทดสอบว่า WebSocket broadcast ทำงานได้หรือไม่
+    """
+    test_payload = {
+        "text": "Hello from the test button!",
+        "label": "Neutral",
+        "score": 1.0
+    }
+    await manager.broadcast(json.dumps(test_payload))
+    return {"message": "Test message broadcasted!"}
+
+
+
+
+
 # <--- ลบ Endpoint ที่ซ้ำซ้อนออกไปแล้ว ---
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
