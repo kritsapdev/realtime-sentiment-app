@@ -13,9 +13,11 @@ env:
   REPO_NAME: realtime-sentiment-repo
 
 jobs:
+  # JOB 1: Deploys the Backend and gets its URL
   deploy-backend:
     name: 1. Deploy Backend API
     runs-on: ubuntu-latest
+    # This section makes the URL available to other jobs
     outputs:
       backend_url: ${{ steps.deploy.outputs.url }}
 
@@ -26,26 +28,31 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v2
       - run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
       - name: Build and Push Backend Image
         run: |
           docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }} -f Dockerfile .
           docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }}
+
       - name: Deploy Backend and Get URL
         id: deploy
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE_NAME }} \
             --image ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }} \
-            --region ${{ env.GCP_REGION }} \
+            --region ${{ env.GGCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
             --set-env-vars="HF_TOKEN=${{ secrets.HF_TOKEN }}"
+          # Get the URL of the service and save it as an output
           URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
           echo "url=$URL" >> $GITHUB_OUTPUT
 
+  # JOB 2: Deploys the Dashboard AFTER the Backend is ready
   deploy-dashboard:
     name: 2. Deploy Frontend Dashboard
     runs-on: ubuntu-latest
-    needs: deploy-backend # รอให้ Backend ทำงานเสร็จก่อน
+    # This line is crucial: it waits for the backend job to finish
+    needs: deploy-backend
 
     steps:
       - uses: actions/checkout@v4
@@ -54,13 +61,15 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v2
       - run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+      
       - name: Build and Push Dashboard Image
         run: |
           docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.DASHBOARD_SERVICE_NAME }}:${{ github.sha }} -f dashboard.Dockerfile .
           docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.DASHBOARD_SERVICE_NAME }}:${{ github.sha }}
+
       - name: Deploy Dashboard
         run: |
-          # เปลี่ยน https:// เป็น wss:// สำหรับ WebSocket
+          # This line takes the URL from the previous job and formats it correctly
           BACKEND_WS_URL=$(echo "${{ needs.deploy-backend.outputs.backend_url }}" | sed 's|https|wss|')/ws
           gcloud run deploy ${{ env.DASHBOARD_SERVICE_NAME }} \
             --image ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.DASHBOARD_SERVICE_NAME }}:${{ github.sha }} \
