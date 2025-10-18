@@ -42,7 +42,7 @@ jobs:
             --region ${{ env.GGCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars="HF_TOKEN=${{ secrets.HF_TOKEN }}"
+            --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" # <-- แก้ไขบรรทัดนี้
           # Get the URL of the service and save it as an output
           URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
           echo "url=$URL" >> $GITHUB_OUTPUT

@@ -1,3 +1,4 @@
+google-generativeai
 waitress
 annotated-types==0.7.0
 anyio==4.11.0
