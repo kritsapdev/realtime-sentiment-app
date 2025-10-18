@@ -5,15 +5,15 @@ import random
 
 # รายการคอมเมนต์ตัวอย่างที่เราจะใช้สุ่มส่ง
 COMMENTS = [
-    "สินค้าคุณภาพดีมากครับ ประทับใจสุดๆ",
-    "ส่งของเร็วดีนะ แต่แพ็คเกจบุบไปหน่อย",
-    "เฉยๆ อะ ไม่ได้ดีเท่าที่คาดหวังไว้",
-    "โคตรห่วย! ใช้ได้วันเดียวพัง",
-    "บริการหลังการขายดีเยี่ยม ตอบแชทไว",
-    "สีสวยตรงปก ชอบมากค่ะ",
-    "รอนานมากกกกกกกกก",
-    "แพ็คของมาดีมากๆ เลยครับ",
-    "กลิ่นไม่ค่อยหอมเท่าไหร่"
+"The product is of excellent quality. I'm super impressed!",  
+"Fast delivery, but the package was a bit dented.",
+"It's just okay. Not as good as I expected.",
+"Terrible! It broke after just one day of use.",  
+"Excellent after-sales service. Very responsive in chat.",  
+"The color matches the pictures. I really love it!",
+"Waited for soooo long!",  
+"The packaging was done really well.",  
+"The scent is not very pleasant."
 ]
 
 # URL ของ Backend Server ที่เรารันไว้อยู่
