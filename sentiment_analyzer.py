@@ -11,7 +11,7 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # 3. สร้าง Instance ของโมเดล Gemini
-model = genai.GenerativeModel('gemini-1.0-pro')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # 4. สร้าง "Prompt" หรือ "บทสนทนา" เพื่อสอนให้ Gemini วิเคราะห์ Sentiment
 # การให้ตัวอย่าง (few-shot prompting) จะทำให้ผลลัพธ์แม่นยำและคงที่มาก
