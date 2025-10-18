@@ -3,7 +3,7 @@ import requests
 import os
 
 # 1. URL ของ API ที่จะเรียกใช้ (เรายังคงใช้โมเดลเดิม แต่รันบนเซิร์ฟเวอร์ของ Hugging Face)
-API_URL = "https://api-inference.huggingface.co/models/poom-sci/WangchanBERTa-finetuned-sentiment"
+API_URL = "https://api-inference.huggingface.co/models/agentlans/multilingual-e5-small-aligned-sentiment"
 
 # 2. ดึง Token ที่เราเก็บไว้ใน Secret ซึ่ง CI/CD จะตั้งค่าให้เป็น Environment Variable
 hf_token = os.environ.get("HF_TOKEN")
