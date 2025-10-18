@@ -78,6 +78,19 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
+@app.post("/simulate-new-comment")
+async def trigger_simulation(background_tasks: BackgroundTasks):
+    """
+    Endpoint นี้จะรับการ "สะกิด" จาก Cloud Scheduler
+    แล้วสั่งให้ loop ของเราไปทำงานเบื้องหลัง (background) ทันที
+    """
+    print("Received trigger from Cloud Scheduler.")
+    # สั่งให้ run_simulation_loop ไปทำงานเบื้องหลัง
+    background_tasks.add_task(run_simulation_loop)
+
+    # ตอบกลับ Cloud Scheduler ทันทีว่า "รับทราบ" โดยไม่ต้องรอให้ loop ทำงานเสร็จ
+    return {"status": "ok", "message": "Simulation loop started in background."}
+
 
 # --- Endpoint ใหม่สำหรับให้ Cloud Scheduler เรียก ---
 async def run_simulation_loop():
