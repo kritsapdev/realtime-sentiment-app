@@ -11,4 +11,5 @@ COPY . .
 # คำสั่งสำหรับรัน Dashboard Server
 # ใช้ shell form เพื่อให้ $PORT ทำงานได้
 # CMD ใหม่ (ที่ถูกต้องสำหรับ Production):
-CMD waitress-serve --host=0.0.0.0 --port=$PORT dashboard:server
+#CMD waitress-serve --host=0.0.0.0 --port=$PORT dashboard:server
+CMD ["printenv"]
