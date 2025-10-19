@@ -21,12 +21,21 @@ app.add_middleware(
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
+
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+        # --- LOGGING เพิ่มเติม ---
+        print(f"INFO:     New client connected. Total clients: {len(self.active_connections)}")
+
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
+        # --- LOGGING เพิ่มเติม ---
+        print(f"INFO:     Client disconnected. Total clients: {len(self.active_connections)}")
+
     async def broadcast(self, message: str):
+        # --- LOGGING เพิ่มเติม ---
+        print(f"INFO:     Broadcasting message to {len(self.active_connections)} clients.")
         for connection in self.active_connections:
             await connection.send_text(message)
 
@@ -39,12 +48,8 @@ COMMENTS = [
 ]
 
 async def process_and_broadcast_comment(comment_text: str):
-    """
-    ฟังก์ชันกลางสำหรับวิเคราะห์คอมเมนต์และส่งผลลัพธ์ไปยัง Dashboards
-    """
     if not comment_text:
         return
-
     analysis_result = analyze_sentiment(comment_text)
     payload = {
         "text": comment_text,
@@ -53,13 +58,8 @@ async def process_and_broadcast_comment(comment_text: str):
     }
     await manager.broadcast(json.dumps(payload))
 
-
-# --- เพิ่ม Endpoint สำหรับทดสอบการ Broadcast โดยตรง ---
 @app.get("/test-broadcast")
 async def test_broadcast():
-    """
-    Endpoint ง่ายๆ สำหรับทดสอบว่า WebSocket broadcast ทำงานได้หรือไม่
-    """
     test_payload = {
         "text": "Hello from the test button!",
         "label": "Neutral",
@@ -68,16 +68,8 @@ async def test_broadcast():
     await manager.broadcast(json.dumps(test_payload))
     return {"message": "Test message broadcasted!"}
 
-
-
-
-
-# <--- ลบ Endpoint ที่ซ้ำซ้อนออกไปแล้ว ---
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """
-    Endpoint สำหรับ WebSocket ให้ Dashboard เข้ามาเชื่อมต่อเพื่อรอฟังข้อมูล
-    """
     await manager.connect(websocket)
     try:
         while True:
@@ -92,16 +84,16 @@ async def new_comment_received(data: dict):
     return {"message": "Analysis broadcasted successfully"}
 
 async def run_simulation_loop():
-    print("Starting simulation loop for 1 minute...")
+    print("INFO:     Starting simulation loop for 1 minute...")
     for i in range(12):
         comment_to_simulate = random.choice(COMMENTS)
-        print(f"Loop {i+1}/12: Simulating '{comment_to_simulate}'")
+        print(f"INFO:     Loop {i+1}/12: Simulating '{comment_to_simulate}'")
         await process_and_broadcast_comment(comment_to_simulate)
         await asyncio.sleep(5)
-    print("Simulation loop finished.")
+    print("INFO:     Simulation loop finished.")
 
 @app.post("/simulate-new-comment")
 async def trigger_simulation(background_tasks: BackgroundTasks):
-    print("Received trigger from Cloud Scheduler.")
+    print("INFO:     Received trigger from Cloud Scheduler.")
     background_tasks.add_task(run_simulation_loop)
     return {"status": "ok", "message": "Simulation loop started in background."}

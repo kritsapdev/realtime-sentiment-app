@@ -41,6 +41,10 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
+
+          echo "Waiting for service to be ready..."
+          sleep 10 # เพิ่มการหน่วงเวลาเล็กน้อยเพื่อให้แน่ใจว่า service พร้อม
+
           URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
           echo "url=$URL" >> $GITHUB_OUTPUT
 
