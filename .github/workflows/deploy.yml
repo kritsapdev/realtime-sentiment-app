@@ -32,7 +32,8 @@ jobs:
           docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }} -f Dockerfile .
           docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }}
 
-      - name: Deploy Backend and Get URL
+      # <<< นี่คือส่วนที่แก้ไขให้ฉลาดขึ้น >>>
+      - name: Deploy Backend and Get URL with Retry
         id: deploy
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE_NAME }} \
@@ -43,9 +44,22 @@ jobs:
             --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
 
           echo "Waiting for service to be ready..."
-          sleep 10 # เพิ่มการหน่วงเวลาเล็กน้อยเพื่อให้แน่ใจว่า service พร้อม
+          URL=""
+          for i in {1..5}; do
+            URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)' 2>/dev/null)
+            if [ -n "$URL" ]; then
+              echo "Successfully fetched URL: $URL"
+              break
+            fi
+            echo "Attempt $i: Service not ready, waiting 15 seconds..."
+            sleep 15
+          done
 
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
+          if [ -z "$URL" ]; then
+            echo "::error::Could not fetch service URL after multiple attempts."
+            exit 1
+          fi
+
           echo "url=$URL" >> $GITHUB_OUTPUT
 
   deploy-dashboard:
