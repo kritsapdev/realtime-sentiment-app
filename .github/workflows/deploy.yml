@@ -32,7 +32,7 @@ jobs:
           docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }} -f Dockerfile .
           docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }}
 
-      - name: Deploy Backend and Get URL
+      - name: Deploy Backend and Get URL with Retry
         id: deploy
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE_NAME }} \
@@ -42,10 +42,23 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
           
-          echo "Waiting for service to be ready..."
-          sleep 10
+          echo "Waiting for service to be ready and URL to propagate..."
+          URL=""
+          for i in {1..5}; do
+            URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)' 2>/dev/null)
+            if [ -n "$URL" ]; then
+              echo "Successfully fetched URL: $URL"
+              break
+            fi
+            echo "Attempt $i: Service URL not found yet, waiting 15 seconds..."
+            sleep 15
+          done
+
+          if [ -z "$URL" ]; then
+            echo "::error::Could not fetch service URL after multiple attempts."
+            exit 1
+          fi
           
-          URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE_NAME }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
           echo "url=$URL" >> $GITHUB_OUTPUT
 
   deploy-dashboard:
@@ -63,13 +76,11 @@ jobs:
       
       - name: Build and Push Dashboard Image
         run: |
-          # บอกให้ Build โดยใช้พิมพ์เขียวของ Streamlit
           docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.DASHBOARD_SERVICE_NAME }}:${{ github.sha }} -f dashboard_streamlit.Dockerfile .
           docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.DASHBOARD_SERVICE_NAME }}:${{ github.sha }}
 
       - name: Deploy Dashboard
         run: |
-          # ส่ง URL ของ Backend เข้าไปเป็น Environment Variable
           gcloud run deploy ${{ env.DASHBOARD_SERVICE_NAME }} \
             --image ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.DASHBOARD_SERVICE_NAME }}:${{ github.sha }} \
             --region ${{ env.GCP_REGION }} \
